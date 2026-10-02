@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="371" height="258" viewBox="0 0 371 258">
+  <rect width="371" height="258" fill="white"/>
+  <line x1="179.8" y1="218.1" x2="335.8" y2="181.1" stroke="black" stroke-width="1.5"/>
+  <line x1="335.8" y1="181.1" x2="216.8" y2="101.1" stroke="black" stroke-width="1.5"/>
+  <line x1="216.8" y1="101.1" x2="35.8" y2="148.1" stroke="black" stroke-width="1.5"/>
+  <line x1="35.8" y1="148.1" x2="143.8" y2="37.1" stroke="black" stroke-width="1.5"/>
+  <line x1="35.8" y1="148.1" x2="179.8" y2="218.1" stroke="black" stroke-width="1.5"/>
+  <line x1="143.8" y1="37.1" x2="313.8" y2="52.1" stroke="black" stroke-width="1.5"/>
+  <line x1="313.8" y1="52.1" x2="216.8" y2="101.1" stroke="black" stroke-width="1.5"/>
+  <line x1="313.8" y1="52.1" x2="335.8" y2="181.1" stroke="black" stroke-width="1.5"/>
+  <circle cx="179.8" cy="218.1" r="4" fill="black"/>
+  <circle cx="143.8" cy="37.1" r="4" fill="black"/>
+  <circle cx="216.8" cy="101.1" r="4" fill="black"/>
+  <circle cx="335.8" cy="181.1" r="4" fill="black"/>
+  <circle cx="35.8" cy="148.1" r="4" fill="black"/>
+  <circle cx="313.8" cy="52.1" r="4" fill="black"/>
+  <text x="174.7" y="243.4" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">A</text>
+  <text x="132" y="26" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">C</text>
+  <text x="226.9" y="89" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">D</text>
+  <text x="354.4" y="194.9" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">E</text>
+  <text x="15.6" y="156.7" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">F</text>
+  <text x="330.9" y="46.6" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">B</text>
+</svg>

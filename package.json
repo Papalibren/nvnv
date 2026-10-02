@@ -1,0 +1,23 @@
+{
+    "name": "ege",
+    "version": "1.0.0",
+    "description": "<p align=\"center\">     <picture>         <source media=\"(prefers-color-scheme: dark)\" srcset=\"https://www.yiiframework.com/image/design/logo/yii3_full_for_dark.svg\">         <source media=\"(prefers-color-scheme: light)\" srcset=\"https://www.yiiframework.com/image/design/logo/yii3_full_for_light.svg\">         <img src=\"https://www.yiiframework.com/image/design/logo/yii3_full_for_light.svg\" alt=\"Yii Framework\" height=\"100\">     </picture>     <h1 align=\"center\">Yii 2 Basic Project Template</h1>     <br> </p>",
+    "main": "index.js",
+    "directories": {
+        "test": "tests"
+    },
+    "scripts": {
+        "dev": "tailwindcss -i web/css/src/app.css -o web/css/app.css --watch",
+        "build": "tailwindcss -i web/css/src/app.css -o web/css/app.css --minify"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@tailwindcss/typography": "^0.5.20",
+        "tailwindcss": "^3.4.19"
+    },
+    "dependencies": {
+        "katex": "^0.17.0"
+    }
+}
