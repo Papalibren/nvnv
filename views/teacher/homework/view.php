@@ -92,38 +92,24 @@ $pending = array_filter($submissions, fn($hs) =>
     <h2 class="text-sm font-semibold text-base-100 mb-3">
         Задачи в этом ДЗ (<?= count($homework->homeworkTasks) ?>)
     </h2>
-    <div class="flex flex-wrap gap-2">
+
+    <div class="space-y-2">
         <?php foreach ($homework->homeworkTasks as $ht): ?>
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-base-900 text-sm">
-                <?php if ($ht->task->task_number): ?>
-                    <span class="badge-indigo">Задание <?= $ht->task->task_number ?></span>
-                <?php else: ?>
-                    <span class="badge-gray">Без номера</span>
-                <?php endif; ?>
-                <span class="text-base-100 truncate max-w-32">
-                    <?= Html::encode(mb_substr(strip_tags($ht->task->content), 0, 40)) ?>
-                </span>
-                <span class="text-base-400 text-xs shrink-0"><?= $ht->max_points ?> б.</span>
-            </div>
+            <?php $task = $ht->task; ?>
+            <a href="<?= Url::to(['/task/view', 'id' => $task->id]) ?>" target="_blank"
+               class="flex items-center justify-between p-3 rounded-lg bg-base-900 no-underline hover:bg-base-800 transition-colors duration-150">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="badge-indigo shrink-0">
+                        <?= $task->task_number ? 'Задание ' . $task->task_number : '№' . $task->id ?>
+                    </span>
+                    <span class="text-sm text-base-100 truncate">
+                        <?= Html::encode(mb_substr(strip_tags($task->content), 0, 80)) ?>…
+                    </span>
+                </div>
+                <span class="text-xs text-base-400 shrink-0 ml-3"><?= $ht->max_points ?> б.</span>
+            </a>
         <?php endforeach; ?>
     </div>
-    <div class="space-y-2">
-    <?php foreach ($homework->homeworkTasks as $ht): ?>
-        <?php $task = $ht->task; ?>
-        <a href="<?= Url::to(['tasks/<id:\d+>', 'id' => $task->id]) ?>"
-           class="flex items-center justify-between p-3 rounded-lg bg-base-900 no-underline hover:bg-base-800 transition-colors duration-150">
-            <div class="flex items-center gap-3 min-w-0">
-                <span class="badge-indigo shrink-0">
-                    <?= $task->task_number ? 'Задание ' . $task->task_number : '№' . $task->id ?>
-                </span>
-                <span class="text-sm text-base-100 truncate">
-                    <?= Html::encode(mb_substr(strip_tags($task->content), 0, 80)) ?>…
-                </span>
-            </div>
-            <span class="text-xs text-base-400 shrink-0 ml-3"><?= $ht->max_points ?> б.</span>
-        </a>
-    <?php endforeach; ?>
-</div>
 </div>
 
 <!-- Табы -->
