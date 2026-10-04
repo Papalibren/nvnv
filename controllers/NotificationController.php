@@ -62,7 +62,7 @@ public function actionMarkAllRead()
     if (Yii::$app->request->headers->has('HX-Request')) {
         return $this->actionPanel();
     }
-    return $this->redirect(['/notifications/index']);
+    return $this->redirect(['/notifications']);
 }
 
 public function actionClearAll()
@@ -72,7 +72,7 @@ public function actionClearAll()
     if (Yii::$app->request->headers->has('HX-Request')) {
         return $this->actionPanel();
     }
-    return $this->redirect(['/notifications/index']);
+    return $this->redirect(['/notifications']);
 }
 
 public function actionIndex()

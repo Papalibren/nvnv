@@ -113,3 +113,4 @@ $statusLabels = ClassSession::getStatusLabels();
         <?php endif; ?>
     </div>
 </div>
+<?= $this->render('_activity_timeline', ['session' => $session]) ?>

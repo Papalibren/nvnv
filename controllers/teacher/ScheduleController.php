@@ -9,6 +9,7 @@ use app\models\User;
 use app\models\Group;
 use app\models\Lesson;
 use app\services\NotificationService;
+use app\services\ActivityService;
 
 class ScheduleController extends BaseTeacherController
 {
@@ -83,6 +84,14 @@ class ScheduleController extends BaseTeacherController
                         'Новое занятие в расписании',
                         $session->title . ' — ' . Yii::$app->formatter->asDatetime($session->scheduled_at, 'php:d.m.Y H:i')
                     );
+
+                    ActivityService::log(
+                        Yii::$app->user->id,
+                        'session_created',
+                        'class_session',
+                        $session->id,
+                        ['scheduled_at' => $session->scheduled_at]
+                    );
                     Yii::$app->session->setFlash('success', 'Занятие запланировано.');
                     return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
                 }
@@ -112,6 +121,8 @@ class ScheduleController extends BaseTeacherController
         $session->status = ClassSession::STATUS_COMPLETED;
         $session->save(false);
 
+        ActivityService::log(Yii::$app->user->id, 'session_completed', 'class_session', $session->id);
+
         return $this->redirect(['/teacher/schedule/view', 'id' => $id]);
     }
 
@@ -120,6 +131,8 @@ class ScheduleController extends BaseTeacherController
         $session = $this->findSession($id);
         $session->status = ClassSession::STATUS_CANCELLED;
         $session->save(false);
+
+        ActivityService::log(Yii::$app->user->id, 'session_cancelled', 'class_session', $session->id);
 
         return $this->redirect(['/teacher/schedule/view', 'id' => $id]);
     }
@@ -170,12 +183,24 @@ class ScheduleController extends BaseTeacherController
             } elseif (!$timestamp) {
                 $error = 'Укажите корректную дату и время.';
             } else {
+                $oldLessonId = $session->lesson_id;
+
                 $session->title            = trim($data['title']);
                 $session->lesson_id        = $data['lesson_id'] ?: null;
                 $session->scheduled_at     = $timestamp;
                 $session->duration_minutes = !empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null;
                 $session->notes            = trim($data['notes'] ?? '') ?: null;
                 $session->save(false);
+
+                if ($oldLessonId != $session->lesson_id) {
+                    ActivityService::log(
+                        Yii::$app->user->id,
+                        'session_lesson_changed',
+                        'class_session',
+                        $session->id,
+                        ['from' => $oldLessonId, 'to' => $session->lesson_id]
+                    );
+                }
 
                 Yii::$app->session->setFlash('success', 'Занятие обновлено.');
                 return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
@@ -194,15 +219,25 @@ class ScheduleController extends BaseTeacherController
             $timestamp = $dateTime ? strtotime($dateTime) : false;
 
             if ($timestamp) {
+                $oldAt = $session->scheduled_at;
+
                 $session->scheduled_at = $timestamp;
                 $session->status       = ClassSession::STATUS_SCHEDULED;
                 $session->save(false);
 
-            $this->notifyStudents(
-                $session,
-                'Занятие перенесено',
-                $session->title . ' перенесено на ' . Yii::$app->formatter->asDatetime($timestamp, 'php:d.m.Y H:i')
-            );
+                $this->notifyStudents(
+                    $session,
+                    'Занятие перенесено',
+                    $session->title . ' перенесено на ' . Yii::$app->formatter->asDatetime($timestamp, 'php:d.m.Y H:i')
+                );
+
+                ActivityService::log(
+                    Yii::$app->user->id,
+                    'session_rescheduled',
+                    'class_session',
+                    $session->id,
+                    ['from' => $oldAt, 'to' => $timestamp]
+                );
 
                 Yii::$app->session->setFlash('success', 'Занятие перенесено.');
             }
@@ -210,7 +245,6 @@ class ScheduleController extends BaseTeacherController
 
         return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
     }
-
     private function findSession(int $id): ClassSession
     {
         $session = ClassSession::findOne(['id' => $id, 'teacher_id' => $this->getTeacher()->id]);
