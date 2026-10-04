@@ -78,7 +78,11 @@ class ScheduleController extends BaseTeacherController
                 $session->created_at       = time();
 
                 if ($session->save()) {
-                    $this->notifyStudents($session);
+                    $this->notifyStudents(
+                        $session,
+                        'Новое занятие в расписании',
+                        $session->title . ' — ' . Yii::$app->formatter->asDatetime($session->scheduled_at, 'php:d.m.Y H:i')
+                    );
                     Yii::$app->session->setFlash('success', 'Занятие запланировано.');
                     return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
                 }
@@ -120,7 +124,7 @@ class ScheduleController extends BaseTeacherController
         return $this->redirect(['/teacher/schedule/view', 'id' => $id]);
     }
 
-    private function notifyStudents(ClassSession $session): void
+    private function notifyStudents(ClassSession $session, string $title, string $body): void
     {
         $notifService = new NotificationService();
         $studentIds = [];
@@ -138,8 +142,8 @@ class ScheduleController extends BaseTeacherController
             $notifService->create(
                 $sid,
                 'session_scheduled',
-                'Новое занятие в расписании',
-                $session->title . ' — ' . Yii::$app->formatter->asDatetime($session->scheduled_at, 'php:d.m.Y H:i'),
+                $title,
+                $body,
                 'class_session',
                 $session->id
             );
@@ -194,14 +198,11 @@ class ScheduleController extends BaseTeacherController
                 $session->status       = ClassSession::STATUS_SCHEDULED;
                 $session->save(false);
 
-                (new NotificationService())->create(
-                    $session->student_id ?: null,
-                    'session_scheduled',
-                    'Занятие перенесено',
-                    $session->title . ' перенесено на ' . Yii::$app->formatter->asDatetime($timestamp, 'php:d.m.Y H:i'),
-                    'class_session',
-                    $session->id
-                );
+            $this->notifyStudents(
+                $session,
+                'Занятие перенесено',
+                $session->title . ' перенесено на ' . Yii::$app->formatter->asDatetime($timestamp, 'php:d.m.Y H:i')
+            );
 
                 Yii::$app->session->setFlash('success', 'Занятие перенесено.');
             }

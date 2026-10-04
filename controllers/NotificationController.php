@@ -10,6 +10,8 @@ use app\models\Notification;
 
 class NotificationController extends Controller
 {
+    public $layout = '@app/views/layouts/cabinet';
+
     public function behaviors(): array
     {
         return [
