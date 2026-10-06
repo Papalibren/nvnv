@@ -27,15 +27,21 @@ $this->title = 'Изменить занятие';
                 <input type="text" name="title" class="input" required value="<?= Html::encode($session->title) ?>">
             </div>
 
+            <?php
+            $currentDate = date('Y-m-d', $session->scheduled_at);
+            $currentTime = date('H:i', $session->scheduled_at);
+            ?>
             <div class="field-group">
                 <label>Дата *</label>
-                <input type="date" name="scheduled_date" class="input" required>
+                <input type="date" name="scheduled_date" class="input" required value="<?= $currentDate ?>">
             </div>
+
             <div class="field-group">
                 <label>Время *</label>
                 <select name="scheduled_time" class="input" required>
                     <?php for ($h = 7; $h <= 22; $h++): foreach (['00', '30'] as $m): ?>
-                        <option value="<?= sprintf('%02d:%s', $h, $m) ?>"><?= sprintf('%02d:%s', $h, $m) ?></option>
+                        <?php $val = sprintf('%02d:%s', $h, $m); ?>
+                        <option value="<?= $val ?>" <?= $val === $currentTime ? 'selected' : '' ?>><?= $val ?></option>
                     <?php endforeach; endfor; ?>
                 </select>
             </div>

@@ -121,7 +121,22 @@ $this->title = $user->name;
                 </form>
             </div>
         <?php endif; ?>
-
+<div class="card">
+    <h2 class="text-base font-semibold text-base-100 mb-3">Часовой пояс</h2>
+    <form method="post" action="<?= Url::to(['/admin/user/update-timezone', 'id' => $user->id]) ?>">
+        <?= Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->csrfToken) ?>
+        <div class="field-group">
+            <select name="timezone" class="input">
+                <?php foreach (User::timezoneList() as $tz => $label): ?>
+                    <option value="<?= $tz ?>" <?= $user->timezone === $tz ? 'selected' : '' ?>>
+                        <?= Html::encode($label) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <?= Html::submitButton('Сохранить', ['class' => 'btn-primary w-full text-sm py-2']) ?>
+    </form>
+</div>
     </div>
 
 </div>

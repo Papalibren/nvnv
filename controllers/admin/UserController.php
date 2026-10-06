@@ -202,6 +202,22 @@ public function actionAssignTeacher(int $id)
         return $this->renderPartial('_status_badge', ['user' => $user]);
     }
 
+    public function actionUpdateTimezone(int $id)
+    {
+        $user = $this->findUser($id);
+
+        if (Yii::$app->request->isPost) {
+            $tz = Yii::$app->request->post('timezone', 'Europe/Moscow');
+            if (array_key_exists($tz, User::timezoneList())) {
+                $user->timezone = $tz;
+                $user->save(false);
+                Yii::$app->session->setFlash('success', 'Часовой пояс обновлён.');
+            }
+        }
+
+        return $this->redirect(['/admin/user/view', 'id' => $user->id]);
+    }
+
     // ==================
     // Хелпер
     // ==================

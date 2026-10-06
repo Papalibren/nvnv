@@ -34,6 +34,15 @@ class ScheduleController extends BaseTeacherController
         return $this->render('index', ['upcoming' => $upcoming, 'past' => $past]);
     }
 
+    public function actionView(int $id)
+    {
+        $session = $this->findSession($id);
+        $this->view->title = $session->title;
+
+        return $this->render('view', ['session' => $session]);
+    }
+
+
     public function actionCreate()
     {
         $this->view->title = 'Новое занятие';
@@ -44,8 +53,7 @@ class ScheduleController extends BaseTeacherController
             ->where(['ts.teacher_id' => $teacher->id, 'user.status' => User::STATUS_ACTIVE])
             ->all();
 
-        $groups = Group::find()->where(['teacher_id' => $teacher->id])->all();
-
+        $groups  = Group::find()->where(['teacher_id' => $teacher->id])->all();
         $lessons = Lesson::find()->orderBy('title')->all();
 
         $error = null;
@@ -97,18 +105,107 @@ class ScheduleController extends BaseTeacherController
 
         return $this->render('create', [
             'students' => $students,
-            'groups' => $groups,
-            'lessons' => $lessons,
-            'error' => $error,
+            'groups'   => $groups,
+            'lessons'  => $lessons,
+            'error'    => $error,
         ]);
     }
 
-    public function actionView(int $id)
+    public function actionUpdate(int $id)
     {
         $session = $this->findSession($id);
-        $this->view->title = $session->title;
+        $this->view->title = 'Изменить занятие';
 
-        return $this->render('view', ['session' => $session]);
+        $lessons = Lesson::find()->orderBy('title')->all();
+        $error = null;
+
+        if (Yii::$app->request->isPost) {
+            $data = Yii::$app->request->post();
+
+            $dateStr  = $data['scheduled_date'] ?? '';
+            $timeStr  = $data['scheduled_time'] ?? '';
+            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
+
+            if (empty($data['title'])) {
+                $error = 'Введите название занятия.';
+            } elseif (!$timestamp) {
+                $error = 'Укажите корректную дату и время.';
+            } else {
+                $oldLessonId = $session->lesson_id;
+                $oldAt       = $session->scheduled_at;
+
+                $session->title            = trim($data['title']);
+                $session->lesson_id        = $data['lesson_id'] ?: null;
+                $session->scheduled_at     = $timestamp;
+                $session->duration_minutes = !empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null;
+                $session->notes            = trim($data['notes'] ?? '') ?: null;
+                $session->save(false);
+
+                if ($oldLessonId != $session->lesson_id) {
+                    ActivityService::log(
+                        Yii::$app->user->id,
+                        'session_lesson_changed',
+                        'class_session',
+                        $session->id,
+                        ['from' => $oldLessonId, 'to' => $session->lesson_id]
+                    );
+                }
+
+                if ($oldAt != $session->scheduled_at) {
+                    ActivityService::log(
+                        Yii::$app->user->id,
+                        'session_rescheduled',
+                        'class_session',
+                        $session->id,
+                        ['from' => $oldAt, 'to' => $session->scheduled_at]
+                    );
+                }
+
+                Yii::$app->session->setFlash('success', 'Занятие обновлено.');
+                return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
+            }
+        }
+
+        return $this->render('update', ['session' => $session, 'lessons' => $lessons, 'error' => $error]);
+    }
+
+    public function actionReschedule(int $id)
+    {
+        $session = $this->findSession($id);
+
+        if (Yii::$app->request->isPost) {
+            $dateStr  = Yii::$app->request->post('scheduled_date', '');
+            $timeStr  = Yii::$app->request->post('scheduled_time', '');
+            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
+
+            if ($timestamp) {
+                $oldAt = $session->scheduled_at;
+
+                $session->scheduled_at = $timestamp;
+                $session->status       = ClassSession::STATUS_SCHEDULED;
+                $session->save(false);
+
+                $this->notifyStudents(
+                    $session,
+                    'Занятие перенесено',
+                    $session->title . ' перенесено на ' . Yii::$app->formatter->asDatetime($timestamp, 'php:d.m.Y H:i')
+                );
+
+                ActivityService::log(
+                    Yii::$app->user->id,
+                    'session_rescheduled',
+                    'class_session',
+                    $session->id,
+                    ['from' => $oldAt, 'to' => $timestamp]
+                );
+
+                Yii::$app->session->setFlash('success', 'Занятие перенесено.');
+            } else {
+                Yii::$app->session->setFlash('error', 'Укажите корректную дату и время.');
+            }
+        }
+
+        return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
     }
 
     public function actionComplete(int $id)
@@ -145,101 +242,8 @@ class ScheduleController extends BaseTeacherController
         }
 
         foreach ($studentIds as $sid) {
-            $notifService->create(
-                $sid,
-                'session_scheduled',
-                $title,
-                $body,
-                'class_session',
-                $session->id
-            );
+            $notifService->create($sid, 'session_scheduled', $title, $body, 'class_session', $session->id);
         }
-    }
-
-    public function actionUpdate(int $id)
-    {
-        $session = $this->findSession($id);
-        $this->view->title = 'Изменить занятие';
-
-        $lessons = \app\models\Lesson::find()->orderBy('title')->all();
-        $error = null;
-
-        if (Yii::$app->request->isPost) {
-            $data = Yii::$app->request->post();
-
-            $dateStr  = $data['scheduled_date'] ?? '';
-            $timeStr  = $data['scheduled_time'] ?? '';
-            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
-
-            if (empty($data['title'])) {
-                $error = 'Введите название занятия.';
-            } elseif (!$timestamp) {
-                $error = 'Укажите корректную дату и время.';
-            } else {
-                $oldLessonId = $session->lesson_id;
-                $oldAt       = $session->scheduled_at;
-
-                $session->title            = trim($data['title']);
-                $session->lesson_id        = $data['lesson_id'] ?: null;
-                $session->scheduled_at     = $timestamp;
-                $session->duration_minutes = !empty($data['duration_minutes']) ? (int) $data['duration_minutes'] : null;
-                $session->notes            = trim($data['notes'] ?? '') ?: null;
-                $session->save(false);
-
-                if ($oldLessonId != $session->lesson_id) {
-                    ActivityService::log(
-                        Yii::$app->user->id, 'session_lesson_changed', 'class_session', $session->id,
-                        ['from' => $oldLessonId, 'to' => $session->lesson_id]
-                    );
-                }
-
-                if ($oldAt != $session->scheduled_at) {
-                    ActivityService::log(
-                        Yii::$app->user->id, 'session_rescheduled', 'class_session', $session->id,
-                        ['from' => $oldAt, 'to' => $session->scheduled_at]
-                    );
-                }
-
-                Yii::$app->session->setFlash('success', 'Занятие обновлено.');
-                return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
-            }
-        }
-
-        return $this->render('update', ['session' => $session, 'lessons' => $lessons, 'error' => $error]);
-    }
-
-    public function actionReschedule(int $id)
-    {
-        $session = $this->findSession($id);
-
-        if (Yii::$app->request->isPost) {
-            $dateStr  = $data['scheduled_date'] ?? '';
-            $timeStr  = $data['scheduled_time'] ?? '';
-            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
-
-            if ($timestamp) {
-                $oldAt = $session->scheduled_at;
-
-                $session->scheduled_at = $timestamp;
-                $session->status       = ClassSession::STATUS_SCHEDULED;
-                $session->save(false);
-
-                $this->notifyStudents(
-                    $session,
-                    'Занятие перенесено',
-                    $session->title . ' перенесено на ' . Yii::$app->formatter->asDatetime($timestamp, 'php:d.m.Y H:i')
-                );
-
-                ActivityService::log(
-                    Yii::$app->user->id, 'session_rescheduled', 'class_session', $session->id,
-                    ['from' => $oldAt, 'to' => $timestamp]
-                );
-
-                Yii::$app->session->setFlash('success', 'Занятие перенесено.');
-            }
-        }
-
-        return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
     }
 
     private function findSession(int $id): ClassSession

@@ -1,5 +1,7 @@
 <?php
+
 /** @var app\models\ClassSession $session */
+
 use yii\helpers\Html;
 use yii\helpers\Url;
 use app\models\ClassSession;
@@ -87,23 +89,36 @@ $statusLabels = ClassSession::getStatusLabels();
                 Перенести
             </button>
             <a href="<?= Url::to(['/teacher/schedule/cancel', 'id' => $session->id]) ?>" class="btn-secondary text-sm"
-               onclick="return confirm('Отменить занятие?')">
+                onclick="return confirm('Отменить занятие?')">
                 Отменить
             </a>
         <?php endif; ?>
     </div>
 
     <?php if ($session->status === 'scheduled'): ?>
-    <form id="reschedule-form" method="post" action="<?= Url::to(['/teacher/schedule/reschedule', 'id' => $session->id]) ?>"
-          class="hidden mt-3 flex gap-2 items-end">
-        <?= Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->csrfToken) ?>
-        <div class="flex-1">
-            <label>Новая дата и время</label>
-            <input type="datetime-local" name="scheduled_at" class="input" required
-                   value="<?= date('Y-m-d\TH:i', $session->scheduled_at) ?>">
-        </div>
-        <?= Html::submitButton('Перенести', ['class' => 'btn-primary text-sm py-2 px-4']) ?>
-    </form>
+        <?php
+        $rescheduleDate = date('Y-m-d', $session->scheduled_at);
+        $rescheduleTime = date('H:i', $session->scheduled_at);
+        ?>
+        <form id="reschedule-form" method="post" action="<?= Url::to(['/teacher/schedule/reschedule', 'id' => $session->id]) ?>"
+            class="hidden mt-3 flex gap-2 items-end flex-wrap">
+            <?= Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->csrfToken) ?>
+            <div>
+                <label>Новая дата</label>
+                <input type="date" name="scheduled_date" class="input" required value="<?= $rescheduleDate ?>">
+            </div>
+            <div>
+                <label>Новое время</label>
+                <select name="scheduled_time" class="input" required>
+                    <?php for ($h = 7; $h <= 22; $h++): foreach (['00', '30'] as $m): ?>
+                            <?php $val = sprintf('%02d:%s', $h, $m); ?>
+                            <option value="<?= $val ?>" <?= $val === $rescheduleTime ? 'selected' : '' ?>><?= $val ?></option>
+                    <?php endforeach;
+                    endfor; ?>
+                </select>
+            </div>
+            <?= Html::submitButton('Перенести', ['class' => 'btn-primary text-sm py-2 px-4']) ?>
+        </form>
     <?php endif; ?>
 </div>
 
