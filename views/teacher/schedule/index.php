@@ -53,14 +53,17 @@ $statusLabels = ClassSession::getStatusLabels();
         <div class="space-y-2">
             <?php foreach ($past as $s): ?>
                 <a href="<?= Url::to(['/teacher/schedule/view', 'id' => $s->id]) ?>"
-                   class="flex items-center justify-between p-3 rounded-lg bg-base-900 no-underline hover:bg-base-800 transition-colors duration-150">
+                class="flex items-center justify-between p-3 rounded-lg no-underline hover:bg-base-800 transition-colors duration-150 bg-base-900">
                     <div>
-                        <p class="text-sm text-base-100"><?= Html::encode($s->title) ?></p>
-                        <p class="text-xs text-base-400 mt-0.5">
-                            <?= Yii::$app->formatter->asDatetime($s->scheduled_at, 'php:d.m.Y H:i') ?>
+                        <p class="font-semibold text-base-100 text-base">
+                            <?= $s->student ? Html::encode($s->student->name) : Html::encode($s->group->name ?? '') ?>
+                        </p>
+                        <p class="text-sm text-base-400 mt-0.5">
+                            <?= Html::encode($s->title) ?> ·
+                            <?= Yii::$app->formatter->asDatetime($s->scheduled_at, 'php:d.m.Y в H:i') ?>
                         </p>
                     </div>
-                    <span class="<?= $s->status === 'completed' ? 'badge-indigo' : 'badge-gray' ?>">
+                    <span class="<?= $s->status === 'completed' ? 'badge-green' : ($s->status === 'cancelled' ? 'badge-red' : 'badge-gray') ?> shrink-0">
                         <?= $statusLabels[$s->status] ?>
                     </span>
                 </a>

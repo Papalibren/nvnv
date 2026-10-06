@@ -151,10 +151,21 @@ $this->title = 'Новое ДЗ';
             <div class="card">
                 <h2 class="text-base font-semibold text-base-100 mb-4">Параметры ДЗ</h2>
 
+            <?php if (!empty($session)): ?>
                 <div class="field-group">
-                    <label>Название ДЗ *</label>
-                    <input type="text" name="title" class="input" required
-                           placeholder="Например: ДЗ по сортировкам">
+                    <label>Назначено</label>
+                    <div class="input flex items-center" style="background:#F8FAFC; color:#64748B;">
+                        <?= $session->student
+                            ? Html::encode($session->student->name)
+                            : Html::encode($session->group->name ?? '—') ?>
+                        <span class="text-xs text-base-400 ml-2">(из занятия «<?= Html::encode($session->title) ?>»)</span>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="field-group">
+                    <label>Название ДЗ (необязательно)</label>
+                    <input type="text" name="title" class="input"
+                        placeholder="Автоматически, если не заполнено">
                 </div>
 
                 <div class="field-group">
@@ -169,6 +180,7 @@ $this->title = 'Новое ДЗ';
                         <?php endforeach; ?>
                     </select>
                 </div>
+            <?php endif; ?>
 
                 <div class="field-group">
                     <label>Дедлайн</label>

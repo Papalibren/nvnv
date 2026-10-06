@@ -251,4 +251,31 @@ class User extends BaseModel implements IdentityInterface
             self::STATUS_INACTIVE => 'Неактивен',
         ];
     }
+        public function getTimezoneOffsetLabel(): string
+    {
+        try {
+            $tz = new \DateTimeZone($this->timezone ?: 'Europe/Moscow');
+            $now = new \DateTime('now', $tz);
+            return 'UTC' . $now->format('P');
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+
+    public static function timezoneList(): array
+    {
+        return [
+            'Europe/Kaliningrad' => 'Калининград (UTC+2)',
+            'Europe/Moscow'      => 'Москва (UTC+3)',
+            'Europe/Samara'      => 'Самара (UTC+4)',
+            'Asia/Yekaterinburg' => 'Екатеринбург (UTC+5)',
+            'Asia/Omsk'          => 'Омск (UTC+6)',
+            'Asia/Krasnoyarsk'   => 'Красноярск (UTC+7)',
+            'Asia/Irkutsk'       => 'Иркутск (UTC+8)',
+            'Asia/Yakutsk'       => 'Якутск (UTC+9)',
+            'Asia/Vladivostok'   => 'Владивосток (UTC+10)',
+            'Asia/Magadan'       => 'Магадан (UTC+11)',
+            'Asia/Kamchatka'     => 'Камчатка (UTC+12)',
+        ];
+    }
 }

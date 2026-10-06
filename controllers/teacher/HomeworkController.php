@@ -28,9 +28,15 @@ class HomeworkController extends BaseTeacherController
     public function actionCreate(?int $sessionId = null)
     {
         $this->view->title = 'Новое ДЗ';
+        $teacher = $this->getTeacher();
 
-        $teacher  = $this->getTeacher();
-        $groups   = Group::find()->where(['teacher_id' => $teacher->id])->all();
+        $session = null;
+        if ($sessionId) {
+            $session = \app\models\ClassSession::findOne(['id' => $sessionId, 'teacher_id' => $teacher->id]);
+        }
+
+        $groups = Group::find()->where(['teacher_id' => $teacher->id])->all();
+
         $allTasks = Task::find()
             ->where(['status' => Task::STATUS_PUBLISHED])
             ->orderBy(['task_number' => SORT_ASC, 'id' => SORT_ASC])
@@ -39,14 +45,13 @@ class HomeworkController extends BaseTeacherController
         $error = null;
 
         if (Yii::$app->request->isPost) {
-            $data        = Yii::$app->request->post();
-            $taskIds     = $data['task_ids']   ?? [];
+            $data = Yii::$app->request->post();
+
+            $taskIds     = $data['task_ids'] ?? [];
             $maxPoints   = $data['max_points'] ?? [];
             $deadlineRaw = $data['deadline_at'] ?? '';
 
-            if (empty($data['title'])) {
-                $error = 'Введите название ДЗ.';
-            } elseif (empty($taskIds)) {
+            if (empty($taskIds)) {
                 $error = 'Выберите хотя бы одну задачу.';
             } else {
                 $tasks = [];
@@ -57,24 +62,33 @@ class HomeworkController extends BaseTeacherController
                     ];
                 }
 
+                $autoTitle = $session
+                    ? ('ДЗ: ' . $session->title)
+                    : ('ДЗ от ' . date('d.m.Y'));
+                $title = trim($data['title'] ?? '') ?: $autoTitle;
+
                 try {
                     $service = new HomeworkService();
-                    $hw      = $service->create([
-                        'title'       => $data['title'],
-                        'group_id'    => $data['group_id'] ?: null,
-                        'lesson_id'   => null,
-                        'deadline_at' => $deadlineRaw ? strtotime($deadlineRaw) : null,
-                        'tasks'       => $tasks,
+
+                    $groupIdForCreate = $session ? $session->group_id : ($data['group_id'] ?: null);
+
+                    $hw = $service->create([
+                        'title'          => $title,
+                        'group_id'       => $groupIdForCreate,
+                        'lesson_id'      => $session->lesson_id ?? null,
+                        'deadline_at'    => $deadlineRaw ? strtotime($deadlineRaw) : null,
+                        'tasks'          => $tasks,
                         'description'    => trim($data['description'] ?? '') ?: null,
-                        'oral_questions' => trim($data['oral_questions'] ?? '') ?: null
+                        'oral_questions' => trim($data['oral_questions'] ?? '') ?: null,
                     ], $teacher->id);
 
-                    if ($sessionId) {
-                        $session = \app\models\ClassSession::findOne(['id' => $sessionId, 'teacher_id' => $teacher->id]);
-                        if ($session) {
-                            $session->homework_id = $hw->id;
-                            $session->save(false);
-                        }
+                    if ($session && $session->student_id && !$session->group_id) {
+                        $service->assignToStudent($hw, $session->student_id);
+                    }
+
+                    if ($sessionId && $session) {
+                        $session->homework_id = $hw->id;
+                        $session->save(false);
                     }
 
                     Yii::$app->session->setFlash('success', 'ДЗ создано и назначено.');
@@ -88,9 +102,11 @@ class HomeworkController extends BaseTeacherController
         }
 
         return $this->render('create', [
-            'groups'   => $groups,
-            'allTasks' => $allTasks,
-            'error'    => $error,
+            'groups'    => $groups,
+            'allTasks'  => $allTasks,
+            'error'     => $error,
+            'session'   => $session,
+            'sessionId' => $sessionId,
         ]);
     }
 

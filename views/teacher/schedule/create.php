@@ -60,8 +60,16 @@ $this->title = 'Новое занятие';
             </div>
 
             <div class="field-group">
-                <label>Дата и время *</label>
-                <input type="datetime-local" name="scheduled_at" class="input" required>
+                <label>Дата *</label>
+                <input type="date" name="scheduled_date" class="input" required>
+            </div>
+            <div class="field-group">
+                <label>Время *</label>
+                <select name="scheduled_time" class="input" required>
+                    <?php for ($h = 7; $h <= 22; $h++): foreach (['00', '30'] as $m): ?>
+                        <option value="<?= sprintf('%02d:%s', $h, $m) ?>"><?= sprintf('%02d:%s', $h, $m) ?></option>
+                    <?php endforeach; endfor; ?>
+                </select>
             </div>
 
             <div class="field-group">

@@ -56,8 +56,9 @@ class ScheduleController extends BaseTeacherController
             $studentId = $data['target_type'] === 'student' ? (int) $data['student_id'] : null;
             $groupId   = $data['target_type'] === 'group'   ? (int) $data['group_id']   : null;
 
-            $dateTime = $data['scheduled_at'] ?? '';
-            $timestamp = $dateTime ? strtotime($dateTime) : false;
+            $dateStr  = $data['scheduled_date'] ?? '';
+            $timeStr  = $data['scheduled_time'] ?? '';
+            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
 
             if (empty($data['title'])) {
                 $error = 'Введите название занятия.';
@@ -85,13 +86,8 @@ class ScheduleController extends BaseTeacherController
                         $session->title . ' — ' . Yii::$app->formatter->asDatetime($session->scheduled_at, 'php:d.m.Y H:i')
                     );
 
-                    ActivityService::log(
-                        Yii::$app->user->id,
-                        'session_created',
-                        'class_session',
-                        $session->id,
-                        ['scheduled_at' => $session->scheduled_at]
-                    );
+                    ActivityService::log(Yii::$app->user->id, 'session_created', 'class_session', $session->id);
+
                     Yii::$app->session->setFlash('success', 'Занятие запланировано.');
                     return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
                 }
@@ -145,10 +141,7 @@ class ScheduleController extends BaseTeacherController
         if ($session->student_id) {
             $studentIds[] = $session->student_id;
         } elseif ($session->group_id) {
-            $studentIds = \yii\helpers\ArrayHelper::getColumn(
-                $session->group->students,
-                'id'
-            );
+            $studentIds = \yii\helpers\ArrayHelper::getColumn($session->group->students, 'id');
         }
 
         foreach ($studentIds as $sid) {
@@ -167,7 +160,6 @@ class ScheduleController extends BaseTeacherController
     {
         $session = $this->findSession($id);
         $this->view->title = 'Изменить занятие';
-        $teacher = $this->getTeacher();
 
         $lessons = \app\models\Lesson::find()->orderBy('title')->all();
         $error = null;
@@ -175,8 +167,9 @@ class ScheduleController extends BaseTeacherController
         if (Yii::$app->request->isPost) {
             $data = Yii::$app->request->post();
 
-            $dateTime  = $data['scheduled_at'] ?? '';
-            $timestamp = $dateTime ? strtotime($dateTime) : false;
+            $dateStr  = $data['scheduled_date'] ?? '';
+            $timeStr  = $data['scheduled_time'] ?? '';
+            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
 
             if (empty($data['title'])) {
                 $error = 'Введите название занятия.';
@@ -184,6 +177,7 @@ class ScheduleController extends BaseTeacherController
                 $error = 'Укажите корректную дату и время.';
             } else {
                 $oldLessonId = $session->lesson_id;
+                $oldAt       = $session->scheduled_at;
 
                 $session->title            = trim($data['title']);
                 $session->lesson_id        = $data['lesson_id'] ?: null;
@@ -194,11 +188,15 @@ class ScheduleController extends BaseTeacherController
 
                 if ($oldLessonId != $session->lesson_id) {
                     ActivityService::log(
-                        Yii::$app->user->id,
-                        'session_lesson_changed',
-                        'class_session',
-                        $session->id,
+                        Yii::$app->user->id, 'session_lesson_changed', 'class_session', $session->id,
                         ['from' => $oldLessonId, 'to' => $session->lesson_id]
+                    );
+                }
+
+                if ($oldAt != $session->scheduled_at) {
+                    ActivityService::log(
+                        Yii::$app->user->id, 'session_rescheduled', 'class_session', $session->id,
+                        ['from' => $oldAt, 'to' => $session->scheduled_at]
                     );
                 }
 
@@ -215,8 +213,9 @@ class ScheduleController extends BaseTeacherController
         $session = $this->findSession($id);
 
         if (Yii::$app->request->isPost) {
-            $dateTime  = Yii::$app->request->post('scheduled_at', '');
-            $timestamp = $dateTime ? strtotime($dateTime) : false;
+            $dateStr  = $data['scheduled_date'] ?? '';
+            $timeStr  = $data['scheduled_time'] ?? '';
+            $timestamp = ($dateStr && $timeStr) ? strtotime($dateStr . ' ' . $timeStr) : false;
 
             if ($timestamp) {
                 $oldAt = $session->scheduled_at;
@@ -232,10 +231,7 @@ class ScheduleController extends BaseTeacherController
                 );
 
                 ActivityService::log(
-                    Yii::$app->user->id,
-                    'session_rescheduled',
-                    'class_session',
-                    $session->id,
+                    Yii::$app->user->id, 'session_rescheduled', 'class_session', $session->id,
                     ['from' => $oldAt, 'to' => $timestamp]
                 );
 
@@ -245,6 +241,7 @@ class ScheduleController extends BaseTeacherController
 
         return $this->redirect(['/teacher/schedule/view', 'id' => $session->id]);
     }
+
     private function findSession(int $id): ClassSession
     {
         $session = ClassSession::findOne(['id' => $id, 'teacher_id' => $this->getTeacher()->id]);

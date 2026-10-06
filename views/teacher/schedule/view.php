@@ -21,10 +21,31 @@ $statusLabels = ClassSession::getStatusLabels();
     <div class="flex items-center justify-between mb-4">
         <div>
             <h1 class="text-xl font-bold text-base-100"><?= Html::encode($session->title) ?></h1>
+            <?php
+            $teacherTz = new \DateTimeZone(Yii::$app->user->identity->timezone ?? 'Europe/Moscow');
+            $teacherDt = new \DateTime('@' . $session->scheduled_at);
+            $teacherDt->setTimezone($teacherTz);
+
+            $studentUser = $session->student;
+            ?>
             <p class="text-sm text-base-400 mt-1">
                 <?= $session->student ? Html::encode($session->student->name) : Html::encode($session->group->name ?? '') ?>
-                · <?= Yii::$app->formatter->asDatetime($session->scheduled_at, 'php:d.m.Y H:i') ?>
             </p>
+            <div class="flex items-center gap-4 mt-1.5">
+                <span class="text-sm text-base-100 font-medium">
+                    У вас: <?= $teacherDt->format('d.m.Y H:i') ?>
+                </span>
+                <?php if ($studentUser): ?>
+                    <?php
+                    $studentTz = new \DateTimeZone($studentUser->timezone ?: 'Europe/Moscow');
+                    $studentDt = new \DateTime('@' . $session->scheduled_at);
+                    $studentDt->setTimezone($studentTz);
+                    ?>
+                    <span class="text-sm text-base-400">
+                        У ученика: <?= $studentDt->format('d.m.Y H:i') ?> (<?= $studentUser->getTimezoneOffsetLabel() ?>)
+                    </span>
+                <?php endif; ?>
+            </div>
         </div>
         <div class="flex items-center gap-2">
             <?php if ($session->status === 'scheduled' && $session->isPast()): ?>

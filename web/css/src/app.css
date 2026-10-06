@@ -141,6 +141,7 @@
   .badge-red    { @apply badge text-acid-pink border-acid-pink/30 bg-acid-pink/10; }
   .badge-pink   { @apply badge text-acid-pink border-acid-pink/30 bg-acid-pink/10; }
   .badge-gray   { @apply badge text-base-400 border-base-700 bg-base-800; }
+  .badge-green  { @apply badge; color: #16A34A; border-color: rgba(22,163,74,0.3); background: rgba(22,163,74,0.1); }
 
   /* ============ Алерты ============ */
   .alert-success { @apply flex items-start gap-3 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm; }
